@@ -6,9 +6,6 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC is not set")
 endif
 TOPDIR ?= $(CURDIR)
-APP_NAME := GameVault Wii U Exporter
-APP_SHORTNAME := GameVault-WiiU-Exporter
-APP_AUTHOR := domhit
 include $(DEVKITPRO)/wut/share/wut_rules
 TARGET := GameVault-WiiU-Exporter
 BUILD := build

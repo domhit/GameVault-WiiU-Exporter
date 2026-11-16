@@ -4,47 +4,5 @@
 #include <cstring>
 #include <ctime>
 #include <inttypes.h>
-
-namespace {
-constexpr const char* FinalPath = "/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json";
-constexpr const char* TempPath = "/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json.tmp";
-void String(FILE* f, const std::string& s) {
-    std::fputc('"', f);
-    for (unsigned char c : s) switch (c) {
-        case '"': std::fputs("\\\"", f); break; case '\\': std::fputs("\\\\", f); break;
-        case '\n': std::fputs("\\n", f); break; case '\r': std::fputs("\\r", f); break;
-        case '\t': std::fputs("\\t", f); break;
-        default: if (c < 0x20) std::fprintf(f, "\\u%04X", c); else std::fputc(c, f);
-    }
-    std::fputc('"', f);
-}
-void Prop(FILE* f, const char* key, const std::string& value, bool comma=true) {
-    std::fprintf(f, "      \"%s\": ", key); String(f, value); std::fputs(comma ? ",\n" : "\n", f);
-}
-}
-
-bool ExportJson(const std::vector<InstalledTitle>& titles, std::string& error) {
-    error.clear(); errno = 0;
-    FILE* f = std::fopen(TempPath, "wb");
-    if (!f) { error = std::string("fopen: ") + std::strerror(errno); return false; }
-    char timestamp[32] = {};
-    const std::time_t now = std::time(nullptr);
-    if (const std::tm* t = std::localtime(&now)) std::strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%S%z", t);
-    std::fputs("{\n  \"schemaVersion\": 1,\n  \"exporter\": \"GameVault Wii U Exporter\",\n  \"exporterVersion\": \"0.1.0-dev1\",\n  \"platform\": \"WII_U\",\n  \"generatedAt\": ", f);
-    String(f, timestamp);
-    std::fprintf(f, ",\n  \"titleCount\": %u,\n  \"titles\": [\n", static_cast<unsigned>(titles.size()));
-    for (size_t i=0; i<titles.size(); ++i) {
-        const auto& t=titles[i];
-        std::fprintf(f, "    {\n      \"titleId\": \"%016" PRIX64 "\",\n", t.titleId);
-        Prop(f,"name",t.name); Prop(f,"productCode",t.productCode); Prop(f,"kind",t.kind); Prop(f,"region",t.region);
-        std::fprintf(f,"      \"installedVersion\": %u,\n",t.version); Prop(f,"storage",t.storage); Prop(f,"path",t.path); Prop(f,"iconPath",t.iconPath);
-        std::fprintf(f,"      \"groupId\": %u,\n      \"appType\": %u,\n      \"osVersion\": %" PRIu64 ",\n      \"sdkVersion\": %u,\n",t.groupId,t.appType,t.osVersion,t.sdkVersion);
-        Prop(f,"indexedDevice",t.indexedDevice,false); std::fputs(i+1<titles.size()?"    },\n":"    }\n",f);
-    }
-    std::fputs("  ]\n}\n",f);
-    if (std::fflush(f)!=0 || std::ferror(f)) { error=std::string("write: ")+std::strerror(errno); std::fclose(f); std::remove(TempPath); return false; }
-    if (std::fclose(f)!=0) { error=std::string("close: ")+std::strerror(errno); std::remove(TempPath); return false; }
-    std::remove(FinalPath);
-    if (std::rename(TempPath,FinalPath)!=0) { error=std::string("rename: ")+std::strerror(errno); std::remove(TempPath); return false; }
-    return true;
-}
+namespace{constexpr const char*F="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json";constexpr const char*T="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json.tmp";void S(FILE*f,const std::string&s){fputc('"',f);for(unsigned char c:s)switch(c){case'"':fputs("\\\"",f);break;case'\\':fputs("\\\\",f);break;case'\n':fputs("\\n",f);break;case'\r':fputs("\\r",f);break;case'\t':fputs("\\t",f);break;default:if(c<0x20)fprintf(f,"\\u%04X",c);else fputc(c,f);}fputc('"',f);}void P(FILE*f,const char*k,const std::string&v,bool c=true){fprintf(f,"      \"%s\": ",k);S(f,v);fputs(c?",\n":"\n",f);}}
+bool ExportJson(const std::vector<InstalledTitle>&v,std::string&e){e.clear();errno=0;FILE*f=fopen(T,"wb");if(!f){e=std::string("fopen: ")+strerror(errno);return false;}char ts[32]={};time_t n=time(nullptr);if(const tm*t=localtime(&n))strftime(ts,sizeof(ts),"%Y-%m-%dT%H:%M:%S%z",t);fputs("{\n  \"schemaVersion\": 1,\n  \"exporter\": \"GameVault Wii U Exporter\",\n  \"exporterVersion\": \"0.1.0-dev2\",\n  \"platform\": \"WII_U\",\n  \"generatedAt\": ",f);S(f,ts);fprintf(f,",\n  \"titleCount\": %u,\n  \"titles\": [\n",(unsigned)v.size());for(size_t i=0;i<v.size();++i){auto&t=v[i];fprintf(f,"    {\n      \"titleId\": \"%016" PRIX64 "\",\n",t.titleId);P(f,"name",t.name);P(f,"productCode",t.productCode);P(f,"kind",t.kind);P(f,"region",t.region);fprintf(f,"      \"installedVersion\": %u,\n",t.version);P(f,"storage",t.storage);P(f,"path",t.path);P(f,"iconPath",t.iconPath);fprintf(f,"      \"groupId\": %u,\n      \"appType\": %u,\n      \"osVersion\": %" PRIu64 ",\n      \"sdkVersion\": %u,\n",t.groupId,t.appType,t.osVersion,t.sdkVersion);P(f,"indexedDevice",t.indexedDevice,false);fputs(i+1<v.size()?"    },\n":"    }\n",f);}fputs("  ]\n}\n",f);if(fflush(f)||ferror(f)){e=std::string("write: ")+strerror(errno);fclose(f);remove(T);return false;}if(fclose(f)){e=std::string("close: ")+strerror(errno);remove(T);return false;}remove(F);if(rename(T,F)){e=std::string("rename: ")+strerror(errno);remove(T);return false;}return true;}
