@@ -1,6 +1,7 @@
 #include "TitleScanner.hpp"
 #include <coreinit/mcp.h>
 #include <cstdio>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <inttypes.h>
@@ -8,8 +9,25 @@ namespace {
 std::string Trim(std::string v){auto a=v.find_first_not_of(" \t\r\n");if(a==std::string::npos)return{};auto b=v.find_last_not_of(" \t\r\n");return v.substr(a,b-a+1);}
 std::string DecodeEntities(std::string v){struct P{const char*f;const char*t;}p[]={{"&amp;","&"},{"&apos;","'"},{"&quot;","\""},{"&lt;","<"},{"&gt;",">"}};for(auto&x:p){size_t z=0;while((z=v.find(x.f,z))!=std::string::npos){v.replace(z,std::strlen(x.f),x.t);z+=std::strlen(x.t);}}return v;}
 std::string Tag(const std::string&p,const char*t){FILE*f=std::fopen(p.c_str(),"rb");if(!f)return{};std::string d;char b[2048];while(size_t n=std::fread(b,1,sizeof(b),f))d.append(b,n);std::fclose(f);std::string o="<"+std::string(t)+">",c="</"+std::string(t)+">";auto s=d.find(o);if(s==std::string::npos)return{};s+=o.size();auto e=d.find(c,s);return e==std::string::npos?std::string{}:DecodeEntities(Trim(d.substr(s,e-s)));}
-std::string Base(const MCPTitleListType&s){std::string p=s.path;auto u=p.find("/usr/");if(u==std::string::npos)return{};std::string d=s.indexedDevice;if(d=="usb")return "/vol/storage_usb01"+p.substr(u);if(d=="mlc")return "/vol/storage_mlc01"+p.substr(u);return{};}
+std::string Base(const MCPTitleListType&s){std::string p=s.path;auto u=p.find("/usr/");if(u==std::string::npos)return{};std::string d=s.indexedDevice;if(d=="usb")return "storage_usb01:"+p.substr(u);if(d=="mlc")return "storage_mlc01:"+p.substr(u);return{};}
 std::string Kind(uint64_t id,uint32_t a){if(a==static_cast<uint32_t>(MCP_APP_TYPE_GAME_WII))return"WII";switch(static_cast<uint32_t>(id>>32)){case 0x00050000:return"GAME";case 0x0005000C:return"DLC";case 0x0005000E:return"UPDATE";default:return"SYSTEM_OR_OTHER";}}
 std::string Region(const std::string&r){if(r.empty())return"ALL";unsigned v=std::strtoul(r.c_str(),nullptr,0)&7U;switch(v){case 1:return"JPN";case 2:return"USA";case 3:return"JPN/USA";case 4:return"EUR";case 5:return"EUR/JPN";case 6:return"EUR/USA";default:return"ALL";}}
 }
-bool ScanInstalledTitles(std::vector<InstalledTitle>&titles,std::string&error){titles.clear();error.clear();int32_t h=MCP_Open();if(h<0){error="MCP_Open failed";return false;}MCPError cr=MCP_TitleCount(h);if(cr<0){MCP_Close(h);error="MCP_TitleCount failed";return false;}uint32_t count=static_cast<uint32_t>(cr);std::vector<MCPTitleListType> r(count);uint32_t fetched=count;if(count&&MCP_TitleList(h,&fetched,r.data(),r.size()*sizeof(MCPTitleListType))<0){MCP_Close(h);error="MCP_TitleList failed";return false;}MCP_Close(h);r.resize(fetched);titles.reserve(fetched);for(const auto&s:r){uint32_t p=static_cast<uint32_t>(s.titleId>>32);if(p!=0x00050000&&p!=0x0005000C&&p!=0x0005000E)continue;InstalledTitle t;t.titleId=s.titleId;t.version=s.titleVersion;t.path=s.path;t.groupId=s.groupId;t.appType=static_cast<uint32_t>(s.appType);t.osVersion=s.osVersion;t.sdkVersion=s.sdkVersion;t.indexedDevice=s.indexedDevice;t.storage=t.indexedDevice=="usb"?"USB":(t.indexedDevice=="mlc"?"NAND":"UNKNOWN");t.kind=Kind(t.titleId,t.appType);std::string b=Base(s),m=b+"/meta/meta.xml";t.name=Tag(m,"longname_en");if(t.name.empty())t.name=Tag(m,"shortname_en");if(t.name.empty()){char id[17];std::snprintf(id,sizeof(id),"%016" PRIX64,t.titleId);t.name=id;}t.productCode=Tag(m,"product_code");t.region=Region(Tag(m,"region"));t.iconPath=b+"/meta/iconTex.tga";titles.push_back(std::move(t));}return true;}
+bool ScanInstalledTitles(std::vector<InstalledTitle>&titles,std::string&error,std::vector<std::string>&diagnostics){titles.clear();error.clear();diagnostics.clear();int32_t h=MCP_Open();if(h<0){error="MCP_Open failed";return false;}MCPError cr=MCP_TitleCount(h);if(cr<0){MCP_Close(h);error="MCP_TitleCount failed";return false;}uint32_t count=static_cast<uint32_t>(cr);std::vector<MCPTitleListType> r(count);uint32_t fetched=count;if(count&&MCP_TitleList(h,&fetched,r.data(),r.size()*sizeof(MCPTitleListType))<0){MCP_Close(h);error="MCP_TitleList failed";return false;}MCP_Close(h);r.resize(fetched);titles.reserve(fetched);for(const auto&s:r){uint32_t p=static_cast<uint32_t>(s.titleId>>32);if(p!=0x00050000&&p!=0x0005000C&&p!=0x0005000E)continue;InstalledTitle t;t.titleId=s.titleId;t.version=s.titleVersion;t.path=s.path;t.groupId=s.groupId;t.appType=static_cast<uint32_t>(s.appType);t.osVersion=s.osVersion;t.sdkVersion=s.sdkVersion;t.indexedDevice=s.indexedDevice;t.storage=t.indexedDevice=="usb"?"USB":(t.indexedDevice=="mlc"?"NAND":"UNKNOWN");t.kind=Kind(t.titleId,t.appType);std::string b=Base(s),m=b+"/meta/meta.xml";
+        std::string fallback;
+        auto usr=std::string(s.path).find("/usr/");
+        if(usr!=std::string::npos){if(t.indexedDevice=="usb")fallback="/vol/storage_usb01"+std::string(s.path).substr(usr)+"/meta/meta.xml";else if(t.indexedDevice=="mlc")fallback="/vol/storage_mlc01"+std::string(s.path).substr(usr)+"/meta/meta.xml";}
+        if(diagnostics.size()<6){
+            errno=0;FILE*probe=std::fopen(m.c_str(),"rb");char line[220];
+            if(probe){std::fclose(probe);std::snprintf(line,sizeof(line),"OPEN OK: %s",m.c_str());}
+            else std::snprintf(line,sizeof(line),"OPEN FAIL %d %s",errno,std::strerror(errno));
+            diagnostics.emplace_back(line);
+            diagnostics.emplace_back(std::string("PATH: ")+m);
+            if(!fallback.empty()){errno=0;probe=std::fopen(fallback.c_str(),"rb");if(probe){std::fclose(probe);std::snprintf(line,sizeof(line),"FALLBACK OK: %s",fallback.c_str());}else std::snprintf(line,sizeof(line),"FALLBACK FAIL %d %s",errno,std::strerror(errno));diagnostics.emplace_back(line);}
+        }
+        t.name=Tag(m,"longname_en");if(t.name.empty())t.name=Tag(m,"shortname_en");
+        if(t.name.empty()&&!fallback.empty()){t.name=Tag(fallback,"longname_en");if(t.name.empty())t.name=Tag(fallback,"shortname_en");}
+        if(t.name.empty()){char id[17];std::snprintf(id,sizeof(id),"%016" PRIX64,t.titleId);t.name=id;}
+        t.productCode=Tag(m,"product_code");if(t.productCode.empty()&&!fallback.empty())t.productCode=Tag(fallback,"product_code");
+        std::string region=Tag(m,"region");if(region.empty()&&!fallback.empty())region=Tag(fallback,"region");t.region=Region(region);
+        t.iconPath=b+"/meta/iconTex.tga";titles.push_back(std::move(t));}return true;}
