@@ -1,0 +1,3 @@
+FROM ghcr.io/wiiu-env/libmocha:latest AS libmocha
+FROM devkitpro/devkitppc:latest
+COPY --from=libmocha /artifacts $DEVKITPRO

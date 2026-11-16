@@ -1,0 +1,20 @@
+name: Build Wii U Exporter
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build toolchain image
+        run: docker build -f Dockerfile.github -t gamevault-wiiu-build .
+      - name: Build WUHB
+        run: docker run --rm -v "$GITHUB_WORKSPACE:/project" -w /project gamevault-wiiu-build make -j2
+      - name: Upload WUHB
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameVault-WiiU-Exporter-v0.1.0-dev1
+          path: build/release/*.wuhb
+          if-no-files-found: error
