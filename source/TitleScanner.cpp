@@ -29,7 +29,7 @@ std::string Tag(const std::string& d,const char* t){
     return{};
 }
 uint32_t UIntTag(const std::string& d,const char* t){const std::string v=Tag(d,t);return v.empty()?0u:static_cast<uint32_t>(std::strtoul(v.c_str(),nullptr,0));}
-std::string Base(const MCPTitleListType&s){std::string p=s.path;auto u=p.find("/usr/");if(u==std::string::npos)return{};std::string d=s.indexedDevice;if(d=="usb")return "/vol/storage_usb01"+p.substr(u);if(d=="mlc")return "/vol/storage_mlc01"+p.substr(u);return{};}
+std::string Base(const MCPTitleListType&s){return std::string(s.path);}
 std::string Kind(uint64_t id,uint32_t a){if(a==static_cast<uint32_t>(MCP_APP_TYPE_GAME_WII))return"WII";switch(static_cast<uint32_t>(id>>32)){case 0x00050000:return"GAME";case 0x0005000C:return"DLC";case 0x0005000E:return"UPDATE";default:return"SYSTEM_OR_OTHER";}}
 std::string Region(const std::string&r){if(r.empty())return"ALL";unsigned v=std::strtoul(r.c_str(),nullptr,0)&7U;switch(v){case 1:return"JPN";case 2:return"USA";case 3:return"JPN/USA";case 4:return"EUR";case 5:return"EUR/JPN";case 6:return"EUR/USA";default:return"ALL";}}
 

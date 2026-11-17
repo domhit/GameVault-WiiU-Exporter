@@ -1,42 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// vWii read-only IOSUHAX/FSA access follows the established access model used
-// by Compat Title Installer / wuphax. This file contains no install/write path.
 #include "VWiiScanner.hpp"
 #include <iosuhax.h>
+#include <coreinit/filesystem.h>
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
+#include <algorithm>
+#include <cctype>
 
 namespace {
-constexpr const char* OutputPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_iosuhax_diagnostics.json";
-constexpr const char* TempPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_iosuhax_diagnostics.json.tmp";
+constexpr const char* OutputPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_titles.json";
+constexpr const char* TempPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_titles.json.tmp";
+bool Hex8(const char*s){if(!s||std::strlen(s)!=8)return false;for(;*s;++s)if(!std::isxdigit(static_cast<unsigned char>(*s)))return false;return true;}
+std::string Upper(std::string s){std::transform(s.begin(),s.end(),s.begin(),[](unsigned char c){return static_cast<char>(std::toupper(c));});return s;}
+std::string Category(const std::string&u){if(u=="00000001")return"SYSTEM";if(u=="00010001")return"CHANNEL_OR_WIIWARE_VC";if(u=="00010002")return"SYSTEM_CHANNEL";if(u=="00010004")return"GAME_CHANNEL";if(u=="00010005")return"DLC";if(u=="00010008")return"HIDDEN_CHANNEL";return"OTHER";}
 void JsonString(FILE*f,const std::string&v){fputc('"',f);for(unsigned char c:v){switch(c){case'"':fputs("\\\"",f);break;case'\\':fputs("\\\\",f);break;case'\n':fputs("\\n",f);break;case'\r':fputs("\\r",f);break;case'\t':fputs("\\t",f);break;default:if(c<0x20)fprintf(f,"\\u%04X",c);else fputc(c,f);}}fputc('"',f);}
-void Probe(int fsa,const char*path,VWiiScanResult&r){IOSUHAXProbeRow row;row.path=path;int handle=-1;row.openStatus=IOSUHAX_FSA_OpenDir(fsa,path,&handle);row.opened=row.openStatus>=0;if(row.opened)IOSUHAX_FSA_CloseDir(fsa,handle);r.probes.push_back(std::move(row));}
+uint32_t CountContent(int fsa,const std::string&path){int h=-1;if(IOSUHAX_FSA_OpenDir(fsa,path.c_str(),&h)<0)return 0;uint32_t count=0;FSDirectoryEntry e{};while(IOSUHAX_FSA_ReadDir(fsa,h,&e)>=0){if(e.name[0]=='.')continue;std::string n=e.name; if(n.size()>=4&&n.substr(n.size()-4)==".app")++count;}IOSUHAX_FSA_CloseDir(fsa,h);return count;}
+void EnumerateGroup(int fsa,const std::string&upperName,VWiiScanResult&r){const std::string upper=Upper(upperName);const std::string root=r.volumePath+"/title/"+upperName;int h=-1;if(IOSUHAX_FSA_OpenDir(fsa,root.c_str(),&h)<0)return;FSDirectoryEntry e{};while(IOSUHAX_FSA_ReadDir(fsa,h,&e)>=0){if(!Hex8(e.name))continue;VWiiTitle t;t.upperId=upper;t.lowerId=Upper(e.name);t.titleId=t.upperId+t.lowerId;t.category=Category(t.upperId);t.titlePath=root+"/"+e.name;t.tmdPath=t.titlePath+"/content/title.tmd";int fh=-1;t.tmdOpenStatus=IOSUHAX_FSA_OpenFile(fsa,t.tmdPath.c_str(),"r",&fh);if(t.tmdOpenStatus>=0){FSStat stat{};if(IOSUHAX_FSA_StatFile(fsa,fh,&stat)>=0)t.tmdSize=stat.size;IOSUHAX_FSA_CloseFile(fsa,fh);}t.contentCount=CountContent(fsa,t.titlePath+"/content");r.titles.push_back(std::move(t));}IOSUHAX_FSA_CloseDir(fsa,h);}
 }
 
-VWiiScanResult ScanVWiiTitles(){
- VWiiScanResult r;
- r.iosuhaxMcpStatus=IOSUHAX_Open("/dev/mcp");
- if(r.iosuhaxMcpStatus<0){r.iosuhaxDefaultStatus=IOSUHAX_Open(nullptr);if(r.iosuhaxDefaultStatus<0){r.error="IOSUHAX_Open failed for /dev/mcp and /dev/iosuhax";return r;}}
- r.fsaHandle=IOSUHAX_FSA_Open();if(r.fsaHandle<0){r.error="IOSUHAX_FSA_Open failed";IOSUHAX_Close();return r;}
- r.mountStatus=IOSUHAX_FSA_Mount(r.fsaHandle,r.devicePath.c_str(),r.volumePath.c_str(),FSA_MOUNTFLAGS_GLOBAL,nullptr,0);
- // An already mounted volume may return an error; probing remains authoritative.
- Probe(r.fsaHandle,"/vol/storage_slccmpt01",r);
- Probe(r.fsaHandle,"/vol/storage_slccmpt01/title",r);
- Probe(r.fsaHandle,"/vol/storage_slccmpt01/ticket",r);
- Probe(r.fsaHandle,"/vol/storage_slccmpt01/shared1",r);
- Probe(r.fsaHandle,"/vol/storage_slccmpt01/sys",r);
- r.available=r.probes.size()>1&&r.probes[1].opened;
- IOSUHAX_FSA_Close(r.fsaHandle);IOSUHAX_Close();
- return r;
-}
+VWiiScanResult ScanVWiiTitles(){VWiiScanResult r;r.iosuhaxMcpStatus=IOSUHAX_Open("/dev/mcp");if(r.iosuhaxMcpStatus<0){r.iosuhaxDefaultStatus=IOSUHAX_Open(nullptr);if(r.iosuhaxDefaultStatus<0){r.error="IOSUHAX_Open failed";return r;}}r.fsaHandle=IOSUHAX_FSA_Open();if(r.fsaHandle<0){r.error="IOSUHAX_FSA_Open failed";IOSUHAX_Close();return r;}r.mountStatus=IOSUHAX_FSA_Mount(r.fsaHandle,r.devicePath.c_str(),r.volumePath.c_str(),FSA_MOUNTFLAGS_GLOBAL,nullptr,0);const std::string root=r.volumePath+"/title";int h=-1;const int open=IOSUHAX_FSA_OpenDir(r.fsaHandle,root.c_str(),&h);if(open>=0){r.available=true;FSDirectoryEntry e{};while(IOSUHAX_FSA_ReadDir(r.fsaHandle,h,&e)>=0)if(Hex8(e.name))EnumerateGroup(r.fsaHandle,e.name,r);IOSUHAX_FSA_CloseDir(r.fsaHandle,h);}else r.error="IOSUHAX_FSA_OpenDir(/title) failed";std::sort(r.titles.begin(),r.titles.end(),[](const auto&a,const auto&b){return a.titleId<b.titleId;});IOSUHAX_FSA_Close(r.fsaHandle);IOSUHAX_Close();return r;}
 
-bool ExportVWiiDiagnostics(const VWiiScanResult&r,std::string&error){
- error.clear();FILE*f=fopen(TempPath,"wb");if(!f){error=std::string("fopen: ")+strerror(errno);return false;}
- fputs("{\n  \"schemaVersion\": 1,\n  \"exporterVersion\": \"0.2.0-dev4\",\n  \"diagnostic\": \"VWII_IOSUHAX_FSA_PROBE\",\n",f);
- fprintf(f,"  \"available\": %s,\n  \"backend\": ",r.available?"true":"false");JsonString(f,r.backend);
- fprintf(f,",\n  \"iosuhaxMcpStatus\": %d,\n  \"iosuhaxDefaultStatus\": %d,\n  \"fsaHandle\": %d,\n  \"mountStatus\": %d,\n  \"devicePath\": ",r.iosuhaxMcpStatus,r.iosuhaxDefaultStatus,r.fsaHandle,r.mountStatus);JsonString(f,r.devicePath);
- fputs(",\n  \"volumePath\": ",f);JsonString(f,r.volumePath);fputs(",\n  \"error\": ",f);JsonString(f,r.error);fputs(",\n  \"probes\": [\n",f);
- for(size_t i=0;i<r.probes.size();++i){const auto&p=r.probes[i];fputs("    {\"path\": ",f);JsonString(f,p.path);fprintf(f,", \"openStatus\": %d, \"opened\": %s}%s\n",p.openStatus,p.opened?"true":"false",i+1<r.probes.size()?",":"");}
- fputs("  ]\n}\n",f);if(fflush(f)||ferror(f)){error=std::string("write: ")+strerror(errno);fclose(f);remove(TempPath);return false;}if(fclose(f)){error=std::string("close: ")+strerror(errno);remove(TempPath);return false;}remove(OutputPath);if(rename(TempPath,OutputPath)){error=std::string("rename: ")+strerror(errno);remove(TempPath);return false;}return true;
-}
+bool ExportVWiiDiagnostics(const VWiiScanResult&r,std::string&error){error.clear();FILE*f=fopen(TempPath,"wb");if(!f){error=std::string("fopen: ")+strerror(errno);return false;}fputs("{\n  \"schemaVersion\": 1,\n  \"exporterVersion\": \"0.2.0-dev5\",\n  \"platform\": \"VWII\",\n",f);fprintf(f,"  \"available\": %s,\n  \"backend\": ",r.available?"true":"false");JsonString(f,r.backend);fprintf(f,",\n  \"iosuhaxMcpStatus\": %d,\n  \"iosuhaxDefaultStatus\": %d,\n  \"mountStatus\": %d,\n  \"error\": ",r.iosuhaxMcpStatus,r.iosuhaxDefaultStatus,r.mountStatus);JsonString(f,r.error);fprintf(f,",\n  \"titleCount\": %u,\n  \"titles\": [\n",static_cast<unsigned>(r.titles.size()));for(size_t i=0;i<r.titles.size();++i){const auto&t=r.titles[i];fputs("    {\"titleId\": ",f);JsonString(f,t.titleId);fputs(", \"upperId\": ",f);JsonString(f,t.upperId);fputs(", \"lowerId\": ",f);JsonString(f,t.lowerId);fputs(", \"category\": ",f);JsonString(f,t.category);fputs(", \"titlePath\": ",f);JsonString(f,t.titlePath);fputs(", \"tmdPath\": ",f);JsonString(f,t.tmdPath);fprintf(f,", \"tmdOpenStatus\": %d, \"tmdSize\": %llu, \"contentCount\": %u}%s\n",t.tmdOpenStatus,static_cast<unsigned long long>(t.tmdSize),t.contentCount,i+1<r.titles.size()?",":"");}fputs("  ]\n}\n",f);if(fflush(f)||ferror(f)){error=std::string("write: ")+strerror(errno);fclose(f);remove(TempPath);return false;}if(fclose(f)){error=std::string("close: ")+strerror(errno);remove(TempPath);return false;}remove(OutputPath);if(rename(TempPath,OutputPath)){error=std::string("rename: ")+strerror(errno);remove(TempPath);return false;}return true;}

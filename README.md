@@ -65,3 +65,11 @@ Installer and wuphax, reduced to read-only directory probes:
 - probes the root, `title`, `ticket`, `shared1`, and `sys` directories;
 - writes `vwii_iosuhax_diagnostics.json` to SD;
 - performs no NAND write, install, delete, ticket, TMD, or IOS operation.
+
+
+### v0.2.0-dev5
+- Fixes Wii U metadata by using the exact MCP `source.path` (including dynamic `storage_usb01`/`storage_usb02`).
+- Reports the real exporter version while retaining Wii U schema version 1.
+- Enumerates vWii title groups and title IDs through read-only IOSUHAX FSA, including title category, TMD presence/size, and content count.
+- Writes `vwii_titles.json`.
+- USB Loader GX/WBFS media is not part of the vWii NAND title tree and will be handled as a separate removable-storage source.

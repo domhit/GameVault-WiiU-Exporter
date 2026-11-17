@@ -3,10 +3,16 @@
 #include <string>
 #include <vector>
 
-struct IOSUHAXProbeRow {
-    std::string path;
-    int32_t openStatus = 0;
-    bool opened = false;
+struct VWiiTitle {
+    std::string titleId;
+    std::string upperId;
+    std::string lowerId;
+    std::string category;
+    std::string titlePath;
+    std::string tmdPath;
+    int32_t tmdOpenStatus = 0;
+    uint64_t tmdSize = 0;
+    uint32_t contentCount = 0;
 };
 struct VWiiScanResult {
     bool available = false;
@@ -18,7 +24,7 @@ struct VWiiScanResult {
     std::string devicePath = "/dev/slccmpt01";
     std::string volumePath = "/vol/storage_slccmpt01";
     std::string error;
-    std::vector<IOSUHAXProbeRow> probes;
+    std::vector<VWiiTitle> titles;
 };
 VWiiScanResult ScanVWiiTitles();
 bool ExportVWiiDiagnostics(const VWiiScanResult& result, std::string& error);
