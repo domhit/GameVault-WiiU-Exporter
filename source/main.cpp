@@ -10,7 +10,7 @@
 #include "TitleScanner.hpp"
 #include "JsonExporter.hpp"
 #include "VWiiScanner.hpp"
-#include "UsbProbe.hpp"
+#include "UsbLoaderGXScanner.hpp"
 
 namespace {
 void DrawConsole() {
@@ -24,7 +24,7 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev8");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev9");
     WHBLogPrintf("%s", "");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
@@ -49,10 +49,9 @@ int main(int, char**) {
     std::string vwiiError;
     const VWiiScanResult vwii = ScanVWiiTitles();
     const bool vwiiExportOk = ExportVWiiDiagnostics(vwii, vwiiError);
-    std::string usbRawError;
-    const UsbProbeResult usbRaw = ProbeUsbDevices();
-    const bool usbRawExportOk = ExportUsbRawDiagnostics(usbRaw, usbRawError);
-
+    std::string gxError;
+    const UsbLoaderGXResult gx=ScanUsbLoaderGX();
+    const bool gxExportOk=ExportUsbLoaderGX(gx,gxError);
     (void)diagnostics;
     if (!scanOk) {
         WHBLogPrintf("ERROR: Scan failed");
@@ -77,10 +76,9 @@ int main(int, char**) {
         WHBLogPrintf("installed_titles.json written to SD");
         WHBLogPrintf("%s", "");
         WHBLogPrintf("vWii titles: %u", static_cast<unsigned>(vwii.titles.size()));
+        WHBLogPrintf("USB Loader GX games: %u",static_cast<unsigned>(gx.games.size()));
+        WHBLogPrintf("USB Loader GX JSON: %s",gxExportOk?"written":"failed");
         WHBLogPrintf("vWii JSON: %s", vwiiExportOk?"written":"failed");
-        unsigned readableUsb=0; for(const auto& device:usbRaw.devices) if(device.readable) ++readableUsb;
-        WHBLogPrintf("USB raw devices readable: %u", readableUsb);
-        WHBLogPrintf("USB MBR diagnostics: %s", usbRawExportOk?"written":"failed");
         WHBLogPrintf("%s", "");
     }
     WHBLogPrintf("%s", "");

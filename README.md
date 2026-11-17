@@ -96,3 +96,11 @@ Installer and wuphax, reduced to read-only directory probes:
 - Parses all four MBR partition entries (type, start LBA, sector count, estimated size).
 - Reads sector 0 of every populated partition and detects FAT, NTFS, exFAT, WBFS and `55 AA` boot signatures.
 - Writes `vwii_usb_mbr_diagnostics.json`; all access remains read-only.
+
+
+### v0.2.0-dev9 — USB Loader GX cache inventory
+- Replaces raw USB/UStealth experiments with USB Loader GX's authoritative scanned `cache/WII.cache` on SD.
+- Parses the observed fixed format: 4-byte cache version followed by 364-byte game records.
+- Exports Game ID, cached title, exact `usb1:/wbfs/...` path, WBFS/ISO format and available PlayCount from `GXGameStatistics.cfg`.
+- Writes `wii_usbloadergx.json`.
+- Existing Wii U and vWii NAND/TMD exports remain enabled.
