@@ -11,9 +11,6 @@
 #include "JsonExporter.hpp"
 
 namespace {
-void PrintMochaStatus(const char* label, MochaUtilsStatus status) {
-    WHBLogPrintf("%s: %d %s", label, static_cast<int>(status), Mocha_GetStatusStr(status));
-}
 void DrawConsole() {
     WHBLogConsoleDraw();
 }
@@ -22,11 +19,12 @@ void DrawConsole() {
 int main(int, char**) {
     WHBProcInit();
     WHBLogConsoleInit();
+    WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.1.0-dev7");
+    WHBLogPrintf("GameVault Wii U Exporter v0.1.0");
     WHBLogPrintf("");
-    WHBLogPrintf("Initializing Mocha...");
+    WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
 
     const MochaUtilsStatus initStatus = Mocha_InitLibrary();
@@ -37,11 +35,9 @@ int main(int, char**) {
         ? Mocha_MountFS("storage_mlc01", nullptr, "/vol/storage_mlc01")
         : MOCHA_RESULT_LIB_UNINITIALIZED;
 
-    PrintMochaStatus("INIT", initStatus);
-    PrintMochaStatus("USB", usbStatus);
-    PrintMochaStatus("MLC", mlcStatus);
-    WHBLogPrintf("Scanning installed titles with metadata retry...");
-    DrawConsole();
+    if (initStatus != MOCHA_RESULT_SUCCESS || usbStatus != MOCHA_RESULT_SUCCESS || mlcStatus != MOCHA_RESULT_SUCCESS) {
+        WHBLogPrintf("Storage warning: INIT=%d USB=%d MLC=%d", static_cast<int>(initStatus), static_cast<int>(usbStatus), static_cast<int>(mlcStatus));
+    }
 
     std::vector<InstalledTitle> titles;
     std::vector<std::string> diagnostics;
@@ -49,17 +45,31 @@ int main(int, char**) {
     const bool scanOk = ScanInstalledTitles(titles, error, diagnostics);
     const bool exportOk = scanOk && ExportJson(titles, error);
 
-    for (const auto& line : diagnostics) WHBLogPrintf("%s", line.c_str());
+    (void)diagnostics;
     if (!scanOk) {
-        WHBLogPrintf("SCAN FAILED: %s", error.c_str());
+        WHBLogPrintf("ERROR: Scan failed");
+        WHBLogPrintf("%s", error.c_str());
     } else if (!exportOk) {
-        WHBLogPrintf("EXPORT FAILED: %s", error.c_str());
+        WHBLogPrintf("ERROR: Export failed");
+        WHBLogPrintf("%s", error.c_str());
     } else {
-        WHBLogPrintf("EXPORT OK: %u titles", static_cast<unsigned>(titles.size()));
+        unsigned games = 0, updates = 0, dlc = 0;
+        for (const auto& title : titles) {
+            if (title.kind == "GAME") ++games;
+            else if (title.kind == "UPDATE") ++updates;
+            else if (title.kind == "DLC") ++dlc;
+        }
+        WHBLogPrintf("Export complete");
+        WHBLogPrintf("");
+        WHBLogPrintf("Games:   %u", games);
+        WHBLogPrintf("Updates: %u", updates);
+        WHBLogPrintf("DLC:     %u", dlc);
+        WHBLogPrintf("Total:   %u", static_cast<unsigned>(titles.size()));
+        WHBLogPrintf("");
+        WHBLogPrintf("installed_titles.json written to SD");
     }
     WHBLogPrintf("");
-    WHBLogPrintf("A: return to Wii U Menu");
-    WHBLogPrintf("HOME: Close Software via ProcUI");
+    WHBLogPrintf("Press A to return to Wii U Menu");
     DrawConsole();
 
     bool menuLaunchRequested = false;
@@ -68,7 +78,7 @@ int main(int, char**) {
             VPADStatus status{};
             VPADReadError readError{};
             if (VPADRead(VPAD_CHAN_0, &status, 1, &readError) > 0 && (status.trigger & VPAD_BUTTON_A)) {
-                WHBLogPrintf("Requesting Wii U Menu...");
+                WHBLogPrintf("Returning to Wii U Menu...");
                 DrawConsole();
                 SYSLaunchMenu();
                 menuLaunchRequested = true;
@@ -78,7 +88,7 @@ int main(int, char**) {
         DrawConsole();
     }
 
-    // Keep Mocha unmount/deinit disabled in dev5 to isolate the ProcUI/console transition.
+    // ProcUI-aware console cleanup. Mocha mounts are intentionally left to process teardown.
     VPADShutdown();
     WHBLogConsoleFree();
     WHBProcShutdown();
