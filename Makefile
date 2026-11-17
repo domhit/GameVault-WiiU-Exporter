@@ -12,7 +12,7 @@ BUILD := build
 SOURCES := source
 INCLUDES := include
 LDFLAGS = -g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
-LIBS := -lmocha -lwut
+LIBS := -liosuhax -lmocha -lwut
 LIBDIRS := $(WUT_ROOT) $(WUT_ROOT)/usr
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 export OUTPUT := $(CURDIR)/$(BUILD)/$(TARGET)

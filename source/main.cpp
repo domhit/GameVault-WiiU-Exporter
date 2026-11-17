@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <whb/proc.h>
 #include <whb/log.h>
 #include <whb/log_console.h>
@@ -9,6 +10,8 @@
 #include <vector>
 #include "TitleScanner.hpp"
 #include "JsonExporter.hpp"
+#include "VWiiScanner.hpp"
+#include "UsbLoaderGXScanner.hpp"
 
 namespace {
 void DrawConsole() {
@@ -22,8 +25,8 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.1.0");
-    WHBLogPrintf("");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0");
+    WHBLogPrintf("%s", "");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
 
@@ -44,7 +47,12 @@ int main(int, char**) {
     std::string error;
     const bool scanOk = ScanInstalledTitles(titles, error, diagnostics);
     const bool exportOk = scanOk && ExportJson(titles, error);
-
+    std::string vwiiError;
+    const VWiiScanResult vwii = ScanVWiiTitles();
+    const bool vwiiExportOk = ExportVWiiDiagnostics(vwii, vwiiError);
+    std::string gxError;
+    const UsbLoaderGXResult gx=ScanUsbLoaderGX();
+    const bool gxExportOk=ExportUsbLoaderGX(gx,gxError);
     (void)diagnostics;
     if (!scanOk) {
         WHBLogPrintf("ERROR: Scan failed");
@@ -60,15 +68,25 @@ int main(int, char**) {
             else if (title.kind == "DLC") ++dlc;
         }
         WHBLogPrintf("Export complete");
-        WHBLogPrintf("");
+        WHBLogPrintf("%s", "");
         WHBLogPrintf("Games:   %u", games);
         WHBLogPrintf("Updates: %u", updates);
         WHBLogPrintf("DLC:     %u", dlc);
         WHBLogPrintf("Total:   %u", static_cast<unsigned>(titles.size()));
-        WHBLogPrintf("");
+        WHBLogPrintf("%s", "");
         WHBLogPrintf("installed_titles.json written to SD");
+        WHBLogPrintf("%s", "");
+        WHBLogPrintf("vWii titles: %u", static_cast<unsigned>(vwii.titles.size()));
+        WHBLogPrintf("USB Loader GX games: %u",static_cast<unsigned>(gx.games.size()));
+        WHBLogPrintf("USB Loader GX JSON: %s",gxExportOk?"written":"failed");
+        WHBLogPrintf("%s", "");
+        WHBLogPrintf("Wii cache note:");
+        WHBLogPrintf("Run USB Loader GX once after adding/removing Wii games");
+        WHBLogPrintf("before running this exporter, so WII.cache is current.");
+        WHBLogPrintf("vWii JSON: %s", vwiiExportOk?"written":"failed");
+        WHBLogPrintf("%s", "");
     }
-    WHBLogPrintf("");
+    WHBLogPrintf("%s", "");
     WHBLogPrintf("Press A to return to Wii U Menu");
     DrawConsole();
 

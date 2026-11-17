@@ -1,0 +1,12 @@
+GameVault Wii U Exporter v0.2.0
+Copyright (C) 2026 Dominic Hitschel
+SPDX-License-Identifier: GPL-3.0-or-later
+
+This repository contains the source code for GameVault Wii U Exporter. The
+v0.2.0 release is distributed under GPL-3.0-or-later. The historical v0.1.0
+tag remains under the license shipped with that tag.
+
+Third-party projects and interfaces used by this project are documented in
+THIRD_PARTY_LICENSES.md. No USB Loader GX binary, data file, cache file, game,
+cover, banner, Wii U title, Wii title, or other third-party binary asset is
+bundled with this repository.
