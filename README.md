@@ -1,7 +1,7 @@
 # GameVault Wii U Exporter
 Independent minimal Wii U inventory exporter for GameVault using public WUT/MCP/libmocha interfaces.
 
-## v0.1.0-dev6
+## v0.1.0-dev7
 - Enumerates installed Wii U base games, updates and DLC through MCP.
 - Reads metadata from the verified Mocha volume paths `/vol/storage_usb01/...` and `/vol/storage_mlc01/...`.
 - Writes JSON atomically to `/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json`.
@@ -27,3 +27,10 @@ FTP: `/fs/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json
 - Writes the full successfully read `meta.xml` from the first GAME record to `/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/meta_sample.xml`.
 - Displays sample Title ID, byte size, and whether `longname_en`, `shortname_en`, `product_code`, and `region` were found by the current parser.
 - Existing JSON export remains enabled.
+
+
+### dev7 full metadata parser
+- XML tag reader now accepts attributes between tag name and `>`, matching real Wii U `meta.xml`.
+- Exports localized English name, product code, publisher, company code, content platform, XML title version, DRC use, network use, and online-account use.
+- Keeps region decoding, MCP raw fields, 10 x 100 ms file-open retry, atomic JSON export, and the proven WHBLogConsole/ProcUI lifecycle.
+- Raw `meta_sample.xml` generation is disabled now that the format is understood.
