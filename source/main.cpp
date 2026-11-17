@@ -23,7 +23,7 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev2");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev3");
     WHBLogPrintf("");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
@@ -71,6 +71,9 @@ int main(int, char**) {
         WHBLogPrintf("Total:   %u", static_cast<unsigned>(titles.size()));
         WHBLogPrintf("");
         WHBLogPrintf("installed_titles.json written to SD");
+        WHBLogPrintf("");
+        WHBLogPrintf("vWii FSA: client %d, /title %s",vwii.clientHandle,vwii.available?"OK":"FAILED");
+        WHBLogPrintf("vwii_fsa_diagnostics.json %s",vwiiExportOk?"written":"failed");
         WHBLogPrintf("");
         if (vwii.available && vwiiExportOk) {
             WHBLogPrintf("vWii diagnostic: %u titles", static_cast<unsigned>(vwii.titles.size()));

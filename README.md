@@ -48,7 +48,5 @@ The first stable GameVault Wii U Exporter release uses a black WUT/WHBLogConsole
 - Does not modify, install or delete vWii content.
 
 
-#### v0.2.0-dev2 — vWii devoptab path fix
-- Keeps the successful SLCCMPT Mocha mount unchanged.
-- Uses the libmocha/newlib path `storage_slccmpt01:/title` for `opendir`, `stat`, TMD and content access.
-- Keeps `/vol/storage_slccmpt01/title` only as diagnostic Cafe OS path in the JSON.
+### v0.2.0-dev3 — read-only FSA probe
+Uses WUT's direct FSA API to probe `/vol/storage_slccmpt01`, `/title`, `/ticket`, `/shared1`, and `/sys`. Writes `vwii_fsa_diagnostics.json`; no directory content is modified.
