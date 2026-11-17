@@ -11,7 +11,8 @@
 namespace {
 constexpr const char* MountName = "storage_slccmpt01";
 constexpr const char* MountPath = "/vol/storage_slccmpt01";
-constexpr const char* TitleRoot = "/vol/storage_slccmpt01/title";
+constexpr const char* TitleRoot = "storage_slccmpt01:/title";
+constexpr const char* InternalTitleRoot = "/vol/storage_slccmpt01/title";
 constexpr const char* OutputPath = "/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_diagnostics.json";
 constexpr const char* TempPath = "/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_diagnostics.json.tmp";
 
@@ -65,9 +66,9 @@ VWiiScanResult ScanVWiiTitles() {
 
 bool ExportVWiiDiagnostics(const VWiiScanResult& r, std::string& error) {
     error.clear(); FILE* f = fopen(TempPath,"wb"); if(!f){error=std::string("fopen: ")+std::strerror(errno);return false;}
-    fputs("{\n  \"schemaVersion\": 1,\n  \"exporterVersion\": \"0.2.0-dev1\",\n  \"diagnostic\": \"VWII_SLCCMPT\",\n",f);
+    fputs("{\n  \"schemaVersion\": 1,\n  \"exporterVersion\": \"0.2.0-dev2\",\n  \"diagnostic\": \"VWII_SLCCMPT\",\n",f);
     fprintf(f,"  \"available\": %s,\n  \"mountStatus\": %d,\n  \"mountStatusText\": ",r.available?"true":"false",r.mountStatus);JsonString(f,r.mountStatusText);
-    fputs(",\n  \"rootPath\": ",f);JsonString(f,r.rootPath);fputs(",\n  \"error\": ",f);JsonString(f,r.error);fprintf(f,",\n  \"titleCount\": %u,\n  \"titles\": [\n",static_cast<unsigned>(r.titles.size()));
+    fputs(",\n  \"rootPath\": ",f);JsonString(f,r.rootPath);fputs(",\n  \"internalCafePath\": ",f);JsonString(f,InternalTitleRoot);fputs(",\n  \"error\": ",f);JsonString(f,r.error);fprintf(f,",\n  \"titleCount\": %u,\n  \"titles\": [\n",static_cast<unsigned>(r.titles.size()));
     for(size_t i=0;i<r.titles.size();++i){const auto&t=r.titles[i];fputs("    {\n",f);Property(f,"titleId",t.titleId);Property(f,"upperId",t.upperId);Property(f,"lowerId",t.lowerId);Property(f,"category",t.category);Property(f,"titlePath",t.titlePath);Property(f,"tmdPath",t.tmdPath);fprintf(f,"      \"hasTmd\": %s,\n      \"tmdSize\": %llu,\n      \"contentFileCount\": %u,\n      \"hasBanner\": %s\n",t.hasTmd?"true":"false",static_cast<unsigned long long>(t.tmdSize),t.contentFileCount,t.hasBanner?"true":"false");fputs(i+1<r.titles.size()?"    },\n":"    }\n",f);}
     fputs("  ]\n}\n",f); if(fflush(f)||ferror(f)){error=std::string("write: ")+std::strerror(errno);fclose(f);remove(TempPath);return false;} if(fclose(f)){error=std::string("close: ")+std::strerror(errno);remove(TempPath);return false;} remove(OutputPath); if(rename(TempPath,OutputPath)){error=std::string("rename: ")+std::strerror(errno);remove(TempPath);return false;} return true;
 }

@@ -22,7 +22,7 @@ jobs:
       - name: Upload WUHB artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GameVault-WiiU-Exporter-v0.2.0-dev1
+          name: GameVault-WiiU-Exporter-v0.2.0-dev2
           path: build/release/*.wuhb
           if-no-files-found: error
       - name: Publish GitHub Release

@@ -23,7 +23,7 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev1");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev2");
     WHBLogPrintf("");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();

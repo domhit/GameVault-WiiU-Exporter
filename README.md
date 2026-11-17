@@ -46,3 +46,9 @@ The first stable GameVault Wii U Exporter release uses a black WUT/WHBLogConsole
 - Enumerates vWii `/title/<upper>/<lower>` folders and records Title IDs, category, TMD presence/size, `.app` content count and banner candidates.
 - Writes `/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_diagnostics.json`.
 - Does not modify, install or delete vWii content.
+
+
+#### v0.2.0-dev2 — vWii devoptab path fix
+- Keeps the successful SLCCMPT Mocha mount unchanged.
+- Uses the libmocha/newlib path `storage_slccmpt01:/title` for `opendir`, `stat`, TMD and content access.
+- Keeps `/vol/storage_slccmpt01/title` only as diagnostic Cafe OS path in the JSON.
