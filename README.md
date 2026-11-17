@@ -80,3 +80,11 @@ Installer and wuphax, reduced to read-only directory probes:
 - Adds ASCII short IDs and distinguishes disc-title data, channels, system channels, game channels, DLC and hidden channels.
 - Probes `/dev/usb01` and `/dev/usb02` through IOSUHAX FSA and lists root plus `/wbfs` entries in `vwii_usb_diagnostics.json`.
 - USB probing is diagnostic and read-only; FAT32/WBFS interpretation follows after identifying the real device/filesystem.
+
+
+### v0.2.0-dev7 — raw vWii USB probe
+- Probes candidate USB/UMS raw IOSU devices read-only.
+- Reads only sector 0 (512 bytes) from devices that open successfully.
+- Detects 0x55AA MBR signature, FAT markers, and WBFS magic.
+- Writes `vwii_usb_raw_diagnostics.json`.
+- Windows drive-letter/hidden-partition state is irrelevant to this raw IOSU probe.
