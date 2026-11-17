@@ -88,3 +88,11 @@ Installer and wuphax, reduced to read-only directory probes:
 - Detects 0x55AA MBR signature, FAT markers, and WBFS magic.
 - Writes `vwii_usb_raw_diagnostics.json`.
 - Windows drive-letter/hidden-partition state is irrelevant to this raw IOSU probe.
+
+
+### v0.2.0-dev8 — UStealth-aware MBR/partition probe
+- Reads the complete 512-byte MBR sector of reachable raw USB devices.
+- Recognizes standard `55 AA` and UStealth-style `55 AB` signatures.
+- Parses all four MBR partition entries (type, start LBA, sector count, estimated size).
+- Reads sector 0 of every populated partition and detects FAT, NTFS, exFAT, WBFS and `55 AA` boot signatures.
+- Writes `vwii_usb_mbr_diagnostics.json`; all access remains read-only.
