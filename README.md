@@ -73,3 +73,10 @@ Installer and wuphax, reduced to read-only directory probes:
 - Enumerates vWii title groups and title IDs through read-only IOSUHAX FSA, including title category, TMD presence/size, and content count.
 - Writes `vwii_titles.json`.
 - USB Loader GX/WBFS media is not part of the vWii NAND title tree and will be handled as a separate removable-storage source.
+
+
+### v0.2.0-dev6
+- Decodes read-only Wii TMD header fields for every vWii title.
+- Adds ASCII short IDs and distinguishes disc-title data, channels, system channels, game channels, DLC and hidden channels.
+- Probes `/dev/usb01` and `/dev/usb02` through IOSUHAX FSA and lists root plus `/wbfs` entries in `vwii_usb_diagnostics.json`.
+- USB probing is diagnostic and read-only; FAT32/WBFS interpretation follows after identifying the real device/filesystem.
