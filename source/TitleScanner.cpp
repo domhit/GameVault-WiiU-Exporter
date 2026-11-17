@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include "TitleScanner.hpp"
 #include <coreinit/mcp.h>
 #include <coreinit/thread.h>
@@ -33,18 +34,9 @@ std::string Base(const MCPTitleListType&s){return std::string(s.path);}
 std::string Kind(uint64_t id,uint32_t a){if(a==static_cast<uint32_t>(MCP_APP_TYPE_GAME_WII))return"WII";switch(static_cast<uint32_t>(id>>32)){case 0x00050000:return"GAME";case 0x0005000C:return"DLC";case 0x0005000E:return"UPDATE";default:return"SYSTEM_OR_OTHER";}}
 std::string Region(const std::string&r){if(r.empty())return"ALL";unsigned v=std::strtoul(r.c_str(),nullptr,0)&7U;switch(v){case 1:return"JPN";case 2:return"USA";case 3:return"JPN/USA";case 4:return"EUR";case 5:return"EUR/JPN";case 6:return"EUR/USA";default:return"ALL";}}
 
-bool WriteMetaSample(const std::string& xml, std::string& error){
-    constexpr const char* path="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/meta_sample.xml";
-    errno=0;FILE*f=std::fopen(path,"wb");
-    if(!f){error=std::string("meta sample fopen: ")+std::strerror(errno);return false;}
-    const size_t written=std::fwrite(xml.data(),1,xml.size(),f);
-    if(written!=xml.size()){error=std::string("meta sample fwrite: ")+std::strerror(errno);std::fclose(f);return false;}
-    if(std::fflush(f)!=0){error=std::string("meta sample fflush: ")+std::strerror(errno);std::fclose(f);return false;}
-    if(std::fclose(f)!=0){error=std::string("meta sample fclose: ")+std::strerror(errno);return false;}
-    return true;
+
 }
-}
-bool ScanInstalledTitles(std::vector<InstalledTitle>&titles,std::string&error,std::vector<std::string>&diagnostics){titles.clear();error.clear();diagnostics.clear();bool sampleWritten=false;int32_t h=MCP_Open();if(h<0){error="MCP_Open failed";return false;}MCPError cr=MCP_TitleCount(h);if(cr<0){MCP_Close(h);error="MCP_TitleCount failed";return false;}uint32_t count=static_cast<uint32_t>(cr);std::vector<MCPTitleListType> r(count);uint32_t fetched=count;if(count&&MCP_TitleList(h,&fetched,r.data(),r.size()*sizeof(MCPTitleListType))<0){MCP_Close(h);error="MCP_TitleList failed";return false;}MCP_Close(h);r.resize(fetched);titles.reserve(fetched);for(const auto&s:r){uint32_t p=static_cast<uint32_t>(s.titleId>>32);if(p!=0x00050000&&p!=0x0005000C&&p!=0x0005000E)continue;InstalledTitle t;t.titleId=s.titleId;t.version=s.titleVersion;t.path=s.path;t.groupId=s.groupId;t.appType=static_cast<uint32_t>(s.appType);t.osVersion=s.osVersion;t.sdkVersion=s.sdkVersion;t.indexedDevice=s.indexedDevice;t.storage=t.indexedDevice=="usb"?"USB":(t.indexedDevice=="mlc"?"NAND":"UNKNOWN");t.kind=Kind(t.titleId,t.appType);std::string b=Base(s),m=b+"/meta/meta.xml",xml;unsigned attempt=0;int oe=0;bool ok=ReadRetry(m,xml,attempt,oe);if(diagnostics.size()<8){char line[220];if(ok)std::snprintf(line,sizeof(line),"META OK attempt %u",attempt);else std::snprintf(line,sizeof(line),"META FAIL after 10 attempts: %d %s",oe,std::strerror(oe));diagnostics.emplace_back(line);diagnostics.emplace_back("PATH: "+m);}t.name=Tag(xml,"longname_en");if(t.name.empty())t.name=Tag(xml,"shortname_en");if(t.name.empty()){char id[17];std::snprintf(id,sizeof(id),"%016" PRIX64,t.titleId);t.name=id;}t.productCode=Tag(xml,"product_code");t.region=Region(Tag(xml,"region"));t.iconPath=b+"/meta/iconTex.tga";
+bool ScanInstalledTitles(std::vector<InstalledTitle>&titles,std::string&error,std::vector<std::string>&diagnostics){titles.clear();error.clear();diagnostics.clear();int32_t h=MCP_Open();if(h<0){error="MCP_Open failed";return false;}MCPError cr=MCP_TitleCount(h);if(cr<0){MCP_Close(h);error="MCP_TitleCount failed";return false;}uint32_t count=static_cast<uint32_t>(cr);std::vector<MCPTitleListType> r(count);uint32_t fetched=count;if(count&&MCP_TitleList(h,&fetched,r.data(),r.size()*sizeof(MCPTitleListType))<0){MCP_Close(h);error="MCP_TitleList failed";return false;}MCP_Close(h);r.resize(fetched);titles.reserve(fetched);for(const auto&s:r){uint32_t p=static_cast<uint32_t>(s.titleId>>32);if(p!=0x00050000&&p!=0x0005000C&&p!=0x0005000E)continue;InstalledTitle t;t.titleId=s.titleId;t.version=s.titleVersion;t.path=s.path;t.groupId=s.groupId;t.appType=static_cast<uint32_t>(s.appType);t.osVersion=s.osVersion;t.sdkVersion=s.sdkVersion;t.indexedDevice=s.indexedDevice;t.storage=t.indexedDevice=="usb"?"USB":(t.indexedDevice=="mlc"?"NAND":"UNKNOWN");t.kind=Kind(t.titleId,t.appType);std::string b=Base(s),m=b+"/meta/meta.xml",xml;unsigned attempt=0;int oe=0;bool ok=ReadRetry(m,xml,attempt,oe);if(diagnostics.size()<8){char line[220];if(ok)std::snprintf(line,sizeof(line),"META OK attempt %u",attempt);else std::snprintf(line,sizeof(line),"META FAIL after 10 attempts: %d %s",oe,std::strerror(oe));diagnostics.emplace_back(line);diagnostics.emplace_back("PATH: "+m);}t.name=Tag(xml,"longname_en");if(t.name.empty())t.name=Tag(xml,"shortname_en");if(t.name.empty()){char id[17];std::snprintf(id,sizeof(id),"%016" PRIX64,t.titleId);t.name=id;}t.productCode=Tag(xml,"product_code");t.region=Region(Tag(xml,"region"));t.iconPath=b+"/meta/iconTex.tga";
         t.publisher=Tag(xml,"publisher_en");
         t.companyCode=Tag(xml,"company_code");
         t.contentPlatform=Tag(xml,"content_platform");
@@ -52,17 +44,4 @@ bool ScanInstalledTitles(std::vector<InstalledTitle>&titles,std::string&error,st
         t.drcUse=UIntTag(xml,"drc_use");
         t.networkUse=UIntTag(xml,"network_use");
         t.onlineAccountUse=UIntTag(xml,"online_account_use");
-        if(false&&!sampleWritten&&ok&&t.kind=="GAME"){
-            std::string sampleError;
-            if(WriteMetaSample(xml,sampleError)){
-                char id[17];std::snprintf(id,sizeof(id),"%016" PRIX64,t.titleId);
-                char info[160];std::snprintf(info,sizeof(info),"SAMPLE %s: %u bytes",id,static_cast<unsigned>(xml.size()));diagnostics.emplace_back(info);
-                diagnostics.emplace_back(std::string("longname_en: ")+(Tag(xml,"longname_en").empty()?"NOT FOUND":"FOUND"));
-                diagnostics.emplace_back(std::string("shortname_en: ")+(Tag(xml,"shortname_en").empty()?"NOT FOUND":"FOUND"));
-                diagnostics.emplace_back(std::string("product_code: ")+(Tag(xml,"product_code").empty()?"NOT FOUND":"FOUND"));
-                diagnostics.emplace_back(std::string("region: ")+(Tag(xml,"region").empty()?"NOT FOUND":"FOUND"));
-                diagnostics.emplace_back("meta_sample.xml written to SD");
-                sampleWritten=true;
-            }else diagnostics.emplace_back("SAMPLE FAILED: "+sampleError);
-        }
         titles.push_back(std::move(t));}return true;}

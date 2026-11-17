@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 #include <whb/proc.h>
 #include <whb/log.h>
 #include <whb/log_console.h>
@@ -24,7 +25,7 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev9");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0");
     WHBLogPrintf("%s", "");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
@@ -78,6 +79,10 @@ int main(int, char**) {
         WHBLogPrintf("vWii titles: %u", static_cast<unsigned>(vwii.titles.size()));
         WHBLogPrintf("USB Loader GX games: %u",static_cast<unsigned>(gx.games.size()));
         WHBLogPrintf("USB Loader GX JSON: %s",gxExportOk?"written":"failed");
+        WHBLogPrintf("%s", "");
+        WHBLogPrintf("Wii cache note:");
+        WHBLogPrintf("Run USB Loader GX once after adding/removing Wii games");
+        WHBLogPrintf("before running this exporter, so WII.cache is current.");
         WHBLogPrintf("vWii JSON: %s", vwiiExportOk?"written":"failed");
         WHBLogPrintf("%s", "");
     }
