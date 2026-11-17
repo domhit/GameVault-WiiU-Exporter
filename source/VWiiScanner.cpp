@@ -9,15 +9,15 @@ namespace {
 constexpr const char* OutputPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_fsa_diagnostics.json";
 constexpr const char* TempPath="/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_fsa_diagnostics.json.tmp";
 void JsonString(FILE*f,const std::string&v){fputc('"',f);for(unsigned char c:v){switch(c){case'"':fputs("\\\"",f);break;case'\\':fputs("\\\\",f);break;case'\n':fputs("\\n",f);break;case'\r':fputs("\\r",f);break;case'\t':fputs("\\t",f);break;default:if(c<0x20)fprintf(f,"\\u%04X",c);else fputc(c,f);}}fputc('"',f);}
-std::string FsaText(FSAStatus status){const char*text=FSAGetStatusStr(status);return text?text:"unknown";}
-void Probe(FSAClientHandle client,const char*path,VWiiScanResult&result){FSAProbeRow row;row.path=path;FSADirectoryHandle handle{};const FSAStatus status=FSAOpenDir(client,path,&handle);row.openStatus=static_cast<int32_t>(status);row.statusText=FsaText(status);row.opened=status==FSA_STATUS_OK;if(row.opened)FSACloseDir(client,handle);result.probes.push_back(std::move(row));}
+std::string FsaText(FSError status){const char*text=FSAGetStatusStr(status);return text?text:"unknown";}
+void Probe(FSAClientHandle client,const char*path,VWiiScanResult&result){FSAProbeRow row;row.path=path;FSADirectoryHandle handle{};const FSError status=FSAOpenDir(client,path,&handle);row.openStatus=static_cast<int32_t>(status);row.statusText=FsaText(status);row.opened=static_cast<int32_t>(status)==0;if(row.opened)FSACloseDir(client,handle);result.probes.push_back(std::move(row));}
 }
 
 VWiiScanResult ScanVWiiTitles(){
  VWiiScanResult result;
  const MochaUtilsStatus mount=Mocha_MountFS("storage_slccmpt01",nullptr,"/vol/storage_slccmpt01");
  result.mountStatus=static_cast<int32_t>(mount);result.mountStatusText=Mocha_GetStatusStr(mount);
- const FSAStatus init=FSAInit();result.fsaInitStatus=static_cast<int32_t>(init);
+ const FSError init=FSAInit();result.fsaInitStatus=static_cast<int32_t>(init);
  const FSAClientHandle client=FSAAddClient(nullptr);result.clientHandle=static_cast<int32_t>(client);
  if(client<0){result.error="FSAAddClient failed";return result;}
  Probe(client,"/vol/storage_slccmpt01",result);

@@ -24,7 +24,7 @@ int main(int, char**) {
     VPADInit();
 
     WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev3");
-    WHBLogPrintf("");
+    WHBLogPrintf("%s", "");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
 
@@ -64,28 +64,19 @@ int main(int, char**) {
             else if (title.kind == "DLC") ++dlc;
         }
         WHBLogPrintf("Export complete");
-        WHBLogPrintf("");
+        WHBLogPrintf("%s", "");
         WHBLogPrintf("Games:   %u", games);
         WHBLogPrintf("Updates: %u", updates);
         WHBLogPrintf("DLC:     %u", dlc);
         WHBLogPrintf("Total:   %u", static_cast<unsigned>(titles.size()));
-        WHBLogPrintf("");
+        WHBLogPrintf("%s", "");
         WHBLogPrintf("installed_titles.json written to SD");
-        WHBLogPrintf("");
+        WHBLogPrintf("%s", "");
         WHBLogPrintf("vWii FSA: client %d, /title %s",vwii.clientHandle,vwii.available?"OK":"FAILED");
         WHBLogPrintf("vwii_fsa_diagnostics.json %s",vwiiExportOk?"written":"failed");
-        WHBLogPrintf("");
-        if (vwii.available && vwiiExportOk) {
-            WHBLogPrintf("vWii diagnostic: %u titles", static_cast<unsigned>(vwii.titles.size()));
-            WHBLogPrintf("vwii_diagnostics.json written to SD");
-        } else {
-            WHBLogPrintf("vWii diagnostic unavailable");
-            WHBLogPrintf("mount=%d %s", vwii.mountStatus, vwii.mountStatusText.c_str());
-            const std::string detail = vwii.error.empty() ? vwiiError : vwii.error;
-            WHBLogPrintf("%s", detail.c_str());
-        }
+        WHBLogPrintf("%s", "");
     }
-    WHBLogPrintf("");
+    WHBLogPrintf("%s", "");
     WHBLogPrintf("Press A to return to Wii U Menu");
     DrawConsole();
 
