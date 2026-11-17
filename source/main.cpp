@@ -9,6 +9,7 @@
 #include <vector>
 #include "TitleScanner.hpp"
 #include "JsonExporter.hpp"
+#include "VWiiScanner.hpp"
 
 namespace {
 void DrawConsole() {
@@ -22,7 +23,7 @@ int main(int, char**) {
     WHBLogConsoleSetColor(0x000000FF);
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.1.0");
+    WHBLogPrintf("GameVault Wii U Exporter v0.2.0-dev1");
     WHBLogPrintf("");
     WHBLogPrintf("Scanning Wii U inventory...");
     DrawConsole();
@@ -44,6 +45,9 @@ int main(int, char**) {
     std::string error;
     const bool scanOk = ScanInstalledTitles(titles, error, diagnostics);
     const bool exportOk = scanOk && ExportJson(titles, error);
+    std::string vwiiError;
+    const VWiiScanResult vwii = ScanVWiiTitles();
+    const bool vwiiExportOk = ExportVWiiDiagnostics(vwii, vwiiError);
 
     (void)diagnostics;
     if (!scanOk) {
@@ -67,6 +71,16 @@ int main(int, char**) {
         WHBLogPrintf("Total:   %u", static_cast<unsigned>(titles.size()));
         WHBLogPrintf("");
         WHBLogPrintf("installed_titles.json written to SD");
+        WHBLogPrintf("");
+        if (vwii.available && vwiiExportOk) {
+            WHBLogPrintf("vWii diagnostic: %u titles", static_cast<unsigned>(vwii.titles.size()));
+            WHBLogPrintf("vwii_diagnostics.json written to SD");
+        } else {
+            WHBLogPrintf("vWii diagnostic unavailable");
+            WHBLogPrintf("mount=%d %s", vwii.mountStatus, vwii.mountStatusText.c_str());
+            const std::string detail = vwii.error.empty() ? vwiiError : vwii.error;
+            WHBLogPrintf("%s", detail.c_str());
+        }
     }
     WHBLogPrintf("");
     WHBLogPrintf("Press A to return to Wii U Menu");

@@ -38,3 +38,11 @@ FTP: `/fs/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/installed_titles.json
 
 ## v0.1.0 release
 The first stable GameVault Wii U Exporter release uses a black WUT/WHBLogConsole interface, exports rich Wii U metadata, and retains the ProcUI-safe A/HOME return behavior validated on hardware. Pushing tag `v0.1.0` builds the WUHB and publishes it as a GitHub Release asset automatically.
+
+
+### v0.2.0-dev1 — vWii SLCCMPT diagnostics
+- Keeps the stable Wii U `installed_titles.json` schema unchanged.
+- Attempts a read-only Mocha mount of `/vol/storage_slccmpt01`.
+- Enumerates vWii `/title/<upper>/<lower>` folders and records Title IDs, category, TMD presence/size, `.app` content count and banner candidates.
+- Writes `/vol/external01/wiiu/apps/GameVault-WiiU-Exporter/vwii_diagnostics.json`.
+- Does not modify, install or delete vWii content.
