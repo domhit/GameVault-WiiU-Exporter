@@ -1,0 +1,16 @@
+GameVault Wii U Exporter v0.2.x
+Copyright (C) 2026 Dominic Hitschel
+SPDX-License-Identifier: GPL-2.0-or-later
+
+vWii filesystem access uses the established IOSUHAX/FSA access model from:
+- Compat Title Installer, Xpl0itU and contributors, GPL-2.0-or-later
+  https://github.com/Xpl0itU/compat-installer
+- wuphax, FIX94 and contributors, MIT
+  https://github.com/FIX94/wuphax
+
+libiosuhax is an external dependency by Dimok and contributors under its
+zlib-style license. WUT and libmocha are external dependencies under their
+respective licenses.
+
+No ticket, TMD, title, IOS, NAND, or channel write/install/delete code is used
+by the GameVault read-only diagnostic scanner.

@@ -50,3 +50,18 @@ The first stable GameVault Wii U Exporter release uses a black WUT/WHBLogConsole
 
 ### v0.2.0-dev3 — read-only FSA probe
 Uses WUT's direct FSA API to probe `/vol/storage_slccmpt01`, `/title`, `/ticket`, `/shared1`, and `/sys`. Writes `vwii_fsa_diagnostics.json`; no directory content is modified.
+
+### v0.2.0-dev4 — GPL IOSUHAX/FSA vWii probe
+
+The v0.2 development branch is licensed under GPL-2.0-or-later. The historical
+v0.1.0 release remains under the license shipped with that tag.
+
+This build uses the proven IOSUHAX/FSA access model used by Compat Title
+Installer and wuphax, reduced to read-only directory probes:
+
+- opens IOSUHAX via `/dev/mcp`, with `/dev/iosuhax` fallback;
+- opens an IOSUHAX FSA client;
+- mounts `/dev/slccmpt01` globally at `/vol/storage_slccmpt01`;
+- probes the root, `title`, `ticket`, `shared1`, and `sys` directories;
+- writes `vwii_iosuhax_diagnostics.json` to SD;
+- performs no NAND write, install, delete, ticket, TMD, or IOS operation.
