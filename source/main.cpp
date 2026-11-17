@@ -24,7 +24,7 @@ int main(int, char**) {
     WHBLogConsoleInit();
     VPADInit();
 
-    WHBLogPrintf("GameVault Wii U Exporter v0.1.0-dev5");
+    WHBLogPrintf("GameVault Wii U Exporter v0.1.0-dev6");
     WHBLogPrintf("");
     WHBLogPrintf("Initializing Mocha...");
     DrawConsole();
